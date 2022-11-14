@@ -198,7 +198,7 @@ class RootNode extends WindowNode {
 	void setVisible(boolean state) {
 		Window mainWindow = getMainWindow();
 		mainWindow.setVisible(state);
-		WindowUtilities.ensureOnScreen(mainWindow);
+		// WindowUtilities.ensureOnScreen(mainWindow);
 
 		Iterator<DetachedWindowNode> it = detachedWindows.iterator();
 		while (it.hasNext()) {
@@ -433,7 +433,14 @@ class RootNode extends WindowNode {
 	Element saveToXML() {
 		Element root = new Element(ROOT_NODE_ELEMENT_NAME);
 		JFrame frame = windowWrapper.getParentFrame();
+		int state = frame.getExtendedState();		// Get current state (may be maximized)
+		if ((state & JFrame.MAXIMIZED_BOTH) != 0) {	// We are maximized. Want to save un-maximized dimensions
+			frame.setExtendedState(state & ~JFrame.MAXIMIZED_BOTH);
+		}
 		Rectangle r = frame.getBounds();
+		if ((state & JFrame.MAXIMIZED_BOTH) != 0) {	// Revert to original state if needed
+			frame.setExtendedState(state);
+		}
 		root.setAttribute("X_POS", "" + r.x);
 		root.setAttribute("Y_POS", "" + r.y);
 		root.setAttribute("WIDTH", "" + r.width);
@@ -475,10 +482,12 @@ class RootNode extends WindowNode {
 		int y = Integer.parseInt(rootNodeElement.getAttributeValue("Y_POS"));
 		int width = Integer.parseInt(rootNodeElement.getAttributeValue("WIDTH"));
 		int height = Integer.parseInt(rootNodeElement.getAttributeValue("HEIGHT"));
+		int state = Integer.parseInt(rootNodeElement.getAttributeValue("EX_STATE"));
 		JFrame frame = windowWrapper.getParentFrame();
 		Rectangle bounds = new Rectangle(x, y, width, height);
-		WindowUtilities.ensureOnScreen(frame, bounds);
+		// WindowUtilities.ensureOnScreen(frame, bounds);
 		frame.setBounds(bounds);
+		frame.setExtendedState(state);
 
 		List<ComponentPlaceholder> restoredPlaceholders = new ArrayList<>();
 		Iterator<?> elementIterator = rootNodeElement.getChildren().iterator();
